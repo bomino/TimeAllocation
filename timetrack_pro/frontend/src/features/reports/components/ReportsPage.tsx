@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { BarChart3, PieChart, Users } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -42,6 +42,12 @@ const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
 export function ReportsPage() {
   const [startDate, setStartDate] = useState(format(subDays(new Date(), 30), 'yyyy-MM-dd'))
   const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'))
+  const [chartsReady, setChartsReady] = useState(false)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setChartsReady(true), 100)
+    return () => clearTimeout(timer)
+  }, [])
 
   const { data: hoursSummary, isLoading: hoursLoading } = useQuery({
     queryKey: ['reports', 'hours', { startDate, endDate }],
@@ -113,16 +119,20 @@ export function ReportsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {hoursLoading ? (
+            {hoursLoading || !chartsReady ? (
               <Skeleton className="h-[250px]" />
+            ) : !hoursSummary?.by_user?.length ? (
+              <div className="h-[250px] flex items-center justify-center">
+                <p className="text-muted-foreground">No data available</p>
+              </div>
             ) : (
-              <div className="h-[250px]">
-                <ResponsiveContainer width="100%" height="100%">
+              <div className="h-[250px]" style={{ minWidth: 0 }}>
+                <ResponsiveContainer width="100%" height="100%" minWidth={200}>
                   <BarChart
-                    data={hoursSummary?.by_user?.map((u) => ({
+                    data={hoursSummary.by_user.map((u) => ({
                       name: u.name || u.email.split('@')[0],
                       hours: parseFloat(u.total_hours),
-                    })) || []}
+                    }))}
                     layout="vertical"
                   >
                     <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
@@ -158,33 +168,33 @@ export function ReportsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {metricsLoading ? (
+            {metricsLoading || !chartsReady ? (
               <Skeleton className="h-[250px]" />
-            ) : (
+            ) : pieData.length === 0 ? (
               <div className="h-[250px] flex items-center justify-center">
-                {pieData.length === 0 ? (
-                  <p className="text-muted-foreground">No data available</p>
-                ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RechartsPie>
-                      <Pie
-                        data={pieData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={80}
-                        paddingAngle={5}
-                        dataKey="value"
-                        label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
-                      >
-                        {pieData.map((_, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </RechartsPie>
-                  </ResponsiveContainer>
-                )}
+                <p className="text-muted-foreground">No data available</p>
+              </div>
+            ) : (
+              <div className="h-[250px]" style={{ minWidth: 0 }}>
+                <ResponsiveContainer width="100%" height="100%" minWidth={200}>
+                  <RechartsPie>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                      label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
+                    >
+                      {pieData.map((_, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </RechartsPie>
+                </ResponsiveContainer>
               </div>
             )}
             {approvalMetrics && (
@@ -206,16 +216,20 @@ export function ReportsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {hoursLoading ? (
+            {hoursLoading || !chartsReady ? (
               <Skeleton className="h-[200px]" />
+            ) : !hoursSummary?.by_project?.length ? (
+              <div className="h-[200px] flex items-center justify-center">
+                <p className="text-muted-foreground">No data available</p>
+              </div>
             ) : (
-              <div className="h-[200px]">
-                <ResponsiveContainer width="100%" height="100%">
+              <div className="h-[200px]" style={{ minWidth: 0 }}>
+                <ResponsiveContainer width="100%" height="100%" minWidth={200}>
                   <BarChart
-                    data={hoursSummary?.by_project?.map((p) => ({
+                    data={hoursSummary.by_project.map((p) => ({
                       name: p.project_name,
                       hours: parseFloat(p.total_hours),
-                    })) || []}
+                    }))}
                   >
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                     <XAxis

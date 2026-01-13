@@ -10,6 +10,7 @@ urlpatterns = [
 
     # API v1
     path('api/v1/', include('apps.users.urls')),
+    path('api/v1/projects/', include('apps.projects.urls')),
     path('api/v1/time-entries/', include('apps.timeentries.urls')),
     path('api/v1/', include('apps.timesheets.urls')),
     path('api/v1/rates/', include('apps.rates.urls')),
