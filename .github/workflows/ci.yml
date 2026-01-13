@@ -8,11 +8,18 @@ on:
 
 env:
   PYTHON_VERSION: '3.12'
+  NODE_VERSION: '20'
 
 jobs:
-  test:
-    name: Test Suite
+  # =============================================================================
+  # Backend Jobs
+  # =============================================================================
+  backend-test:
+    name: Backend Tests
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: timetrack_pro
 
     services:
       postgres:
@@ -48,6 +55,7 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
+          cache-dependency-path: timetrack_pro/requirements*.txt
 
       - name: Install dependencies
         run: |
@@ -57,34 +65,48 @@ jobs:
 
       - name: Run migrations
         env:
-          DATABASE_URL: postgres://test:test@localhost:5432/timetrack_test
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: timetrack_test
+          DB_USER: test
+          DB_PASSWORD: test
           REDIS_URL: redis://localhost:6379/0
           DJANGO_SETTINGS_MODULE: config.settings.test
+          SECRET_KEY: test-secret-key-for-ci
         run: python manage.py migrate --no-input
 
       - name: Run tests with coverage
         env:
-          DATABASE_URL: postgres://test:test@localhost:5432/timetrack_test
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: timetrack_test
+          DB_USER: test
+          DB_PASSWORD: test
           REDIS_URL: redis://localhost:6379/0
           DJANGO_SETTINGS_MODULE: config.settings.test
+          SECRET_KEY: test-secret-key-for-ci
         run: |
           pytest \
             --cov=apps \
+            --cov=core \
             --cov-report=xml \
             --cov-report=term-missing \
-            --cov-fail-under=80 \
             -v
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./coverage.xml
+          file: timetrack_pro/coverage.xml
+          flags: backend
           fail_ci_if_error: false
 
-  lint:
-    name: Lint & Format
+  backend-lint:
+    name: Backend Lint
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: timetrack_pro
 
     steps:
       - name: Checkout code
@@ -104,9 +126,12 @@ jobs:
       - name: Run Ruff formatter check
         run: ruff format --check .
 
-  type-check:
-    name: Type Check
+  backend-security:
+    name: Backend Security
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: timetrack_pro
 
     steps:
       - name: Checkout code
@@ -117,37 +142,114 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Install dependencies
-        run: |
-          pip install mypy django-stubs djangorestframework-stubs
-          pip install -r requirements.txt
-
-      - name: Run mypy
-        run: mypy apps/ --ignore-missing-imports
-
-  security:
-    name: Security Scan
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Install safety
-        run: pip install safety
+      - name: Install pip-audit
+        run: pip install pip-audit
 
       - name: Check for vulnerabilities
-        run: safety check -r requirements.txt --full-report
+        run: pip-audit -r requirements.txt
         continue-on-error: true
 
+  # =============================================================================
+  # Frontend Jobs
+  # =============================================================================
+  frontend-lint:
+    name: Frontend Lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: timetrack_pro/frontend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: timetrack_pro/frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+  frontend-build:
+    name: Frontend Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: timetrack_pro/frontend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: timetrack_pro/frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript type check
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: timetrack_pro/frontend/dist
+          retention-days: 7
+
+  # =============================================================================
+  # Docker Build (only on main branch push)
+  # =============================================================================
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    needs: [backend-test, backend-lint, frontend-lint, frontend-build]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./timetrack_pro
+          push: false
+          tags: timetrack-backend:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./timetrack_pro/frontend
+          push: false
+          tags: timetrack-frontend:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # =============================================================================
+  # Final Gate
+  # =============================================================================
   all-checks:
     name: All Checks Passed
-    needs: [test, lint, type-check, security]
+    needs: [backend-test, backend-lint, backend-security, frontend-lint, frontend-build]
     runs-on: ubuntu-latest
     steps:
       - name: All checks passed

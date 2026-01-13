@@ -34,3 +34,6 @@ whitenoise>=6.6,<7.0
 
 # Logging
 python-json-logger>=2.0,<3.0
+
+# Error tracking
+sentry-sdk>=1.40,<2.0
