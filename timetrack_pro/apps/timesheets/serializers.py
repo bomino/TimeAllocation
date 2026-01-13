@@ -18,8 +18,18 @@ from apps.timesheets.models import (
 )
 
 
+class NestedUserSerializer(serializers.Serializer):
+    """Minimal user info for nested serialization."""
+    id = serializers.IntegerField()
+    email = serializers.EmailField()
+    first_name = serializers.CharField()
+    last_name = serializers.CharField()
+
+
 class TimesheetCommentSerializer(serializers.ModelSerializer):
     """Serializer for TimesheetComment model."""
+
+    author = NestedUserSerializer(read_only=True)
 
     class Meta:
         model = TimesheetComment
@@ -86,6 +96,8 @@ class TimesheetCommentCreateSerializer(serializers.Serializer):
 class TimesheetListSerializer(serializers.ModelSerializer):
     """Serializer for listing timesheets."""
 
+    user = NestedUserSerializer(read_only=True)
+    approved_by = NestedUserSerializer(read_only=True)
     total_hours = serializers.SerializerMethodField()
 
     class Meta:
@@ -112,6 +124,8 @@ class TimesheetListSerializer(serializers.ModelSerializer):
 class TimesheetDetailSerializer(serializers.ModelSerializer):
     """Serializer for timesheet detail with entries."""
 
+    user = NestedUserSerializer(read_only=True)
+    approved_by = NestedUserSerializer(read_only=True)
     entries = TimeEntrySerializer(many=True, read_only=True)
     total_hours = serializers.SerializerMethodField()
     comments = TimesheetCommentSerializer(many=True, read_only=True)

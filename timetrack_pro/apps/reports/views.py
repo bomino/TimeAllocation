@@ -54,7 +54,9 @@ class HoursSummaryView(APIView):
             'entry_count': queryset.count(),
         }
 
-        if group_by == 'user':
+        group_by_fields = [g.strip() for g in group_by.split(',')] if group_by else []
+
+        if 'user' in group_by_fields:
             by_user = queryset.values('user__id', 'user__email', 'user__first_name', 'user__last_name').annotate(
                 total_hours=Sum('hours')
             ).order_by('-total_hours')
@@ -68,7 +70,7 @@ class HoursSummaryView(APIView):
                 for item in by_user
             ]
 
-        if group_by == 'project':
+        if 'project' in group_by_fields:
             by_project = queryset.values('project__id', 'project__name').annotate(
                 total_hours=Sum('hours')
             ).order_by('-total_hours')

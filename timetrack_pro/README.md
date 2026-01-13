@@ -119,11 +119,24 @@ timetrack_pro/
    docker-compose exec backend python manage.py createsuperuser
    ```
 
-5. **Access the application**
+5. **Seed demo data (optional)**
+   ```bash
+   docker-compose exec backend python manage.py seed_demo_data
+   ```
+
+6. **Access the application**
    - Frontend: http://localhost:3080
    - Backend API: http://localhost:8088/api/v1/
    - API Documentation: http://localhost:8088/api/docs/
    - Django Admin: http://localhost:8088/admin/
+
+### Demo Credentials
+
+| Role | Email | Password |
+|------|-------|----------|
+| Employee | john.doe@timetrack.local | demo123 |
+| Manager | bob.manager@timetrack.local | demo123 |
+| Admin | admin@timetrack.local | demo123 |
 
 ### Service Ports
 
@@ -300,6 +313,15 @@ curl -X POST http://localhost:8088/api/v1/auth/refresh/ \
 
 - **Employees**: Can enter time for current week + 1 week back
 - **Admins**: Can enter time for current week + 1 month back
+
+### Automatic Timesheet Creation
+
+When a time entry is created, the system automatically:
+1. Calculates the week start date based on the company's `week_start_day` setting
+2. Creates a new timesheet for that week if one doesn't exist
+3. Links the time entry to the timesheet
+
+This ensures all time entries are properly associated with timesheets for the approval workflow.
 
 ## Environment Variables
 

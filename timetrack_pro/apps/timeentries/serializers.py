@@ -1,7 +1,7 @@
 """
 Serializers for TimeEntry API.
 """
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 from django.db.models import Sum
@@ -11,6 +11,27 @@ from rest_framework import serializers
 from apps.projects.models import Project
 from apps.rates.services import RateResolutionService
 from apps.timeentries.models import TimeEntry
+
+
+def get_week_start(target_date: date, week_start_day: int = 0) -> date:
+    """Calculate the start of the week containing target_date."""
+    days_since_week_start = (target_date.weekday() - week_start_day) % 7
+    return target_date - timedelta(days=days_since_week_start)
+
+
+def get_or_create_timesheet(user, entry_date: date):
+    """Get or create a timesheet for the given user and date."""
+    from apps.timesheets.models import Timesheet
+
+    week_start_day = user.company.week_start_day if hasattr(user, 'company') and user.company else 0
+    week_start = get_week_start(entry_date, week_start_day)
+
+    timesheet, _ = Timesheet.objects.get_or_create(
+        user=user,
+        week_start=week_start,
+        defaults={'status': Timesheet.Status.DRAFT},
+    )
+    return timesheet
 
 
 class NestedUserSerializer(serializers.Serializer):
@@ -105,9 +126,12 @@ class TimeEntrySerializer(serializers.ModelSerializer):
             as_of_date=entry_date,
         )
 
+        timesheet = get_or_create_timesheet(user, entry_date)
+
         validated_data['user'] = user
         validated_data['billing_rate'] = rate_result.rate
         validated_data['rate_source'] = rate_result.source
+        validated_data['timesheet'] = timesheet
 
         return super().create(validated_data)
 
@@ -215,9 +239,12 @@ class TimerStartSerializer(serializers.Serializer):
             as_of_date=now.date(),
         )
 
+        timesheet = get_or_create_timesheet(user, now.date())
+
         entry = TimeEntry.objects.create(
             user=user,
             project=project,
+            timesheet=timesheet,
             date=now.date(),
             hours=Decimal('0.00'),
             description=validated_data.get('description', ''),
