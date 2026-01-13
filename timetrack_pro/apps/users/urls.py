@@ -8,6 +8,7 @@ from apps.users.views import (
     LogoutView,
     CustomTokenRefreshView,
     UserProfileView,
+    UserListView,
     PasswordResetRequestView,
     PasswordResetConfirmView,
     UserDeactivationView,
@@ -28,6 +29,7 @@ urlpatterns = [
     path('users/me/', UserProfileView.as_view(), name='profile'),
 
     # User management (admin only)
+    path('users/', UserListView.as_view(), name='user_list'),
     path('users/<int:pk>/deactivate/', UserDeactivationView.as_view(), name='user_deactivate'),
     path('users/<int:pk>/deactivation-status/', UserDeactivationStatusView.as_view(), name='user_deactivation_status'),
 ]

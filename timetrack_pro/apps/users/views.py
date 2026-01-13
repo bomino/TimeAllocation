@@ -6,7 +6,7 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.generics import RetrieveUpdateAPIView
+from rest_framework.generics import RetrieveUpdateAPIView, ListAPIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
@@ -18,12 +18,14 @@ from apps.users.serializers import (
     LogoutSerializer,
     UserDeactivationSerializer,
     UserSerializer,
+    UserListSerializer,
     UserProfileSerializer,
     PasswordResetRequestSerializer,
     PasswordResetConfirmSerializer,
 )
 from apps.users.services import DeactivationService
 from apps.users.tasks import send_password_reset_email, send_password_changed_notification
+from core.pagination import StandardPagination
 
 
 class LoginView(APIView):
@@ -275,3 +277,25 @@ class UserDeactivationStatusView(APIView):
             'pending_timesheets_count': pending_count,
             'user_id': target_user.id,
         })
+
+
+class UserListView(ListAPIView):
+    """
+    GET /api/v1/users/
+
+    List all users in the company. Admin only.
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = UserListSerializer
+    pagination_class = StandardPagination
+
+    def get_queryset(self):
+        return User.objects.filter(company=self.request.user.company).order_by('last_name', 'first_name')
+
+    def list(self, request, *args, **kwargs):
+        if not request.user.is_admin:
+            return Response(
+                {'detail': 'Only admins can list users.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        return super().list(request, *args, **kwargs)

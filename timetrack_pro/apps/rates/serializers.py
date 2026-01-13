@@ -8,9 +8,27 @@ from apps.rates.models import Rate
 from apps.users.models import User
 
 
+class RateEmployeeSerializer(serializers.ModelSerializer):
+    """Nested serializer for employee in Rate."""
+
+    class Meta:
+        model = User
+        fields = ['id', 'first_name', 'last_name']
+
+
+class RateProjectSerializer(serializers.ModelSerializer):
+    """Nested serializer for project in Rate."""
+
+    class Meta:
+        model = Project
+        fields = ['id', 'name']
+
+
 class RateSerializer(serializers.ModelSerializer):
     """Serializer for Rate model."""
 
+    employee = RateEmployeeSerializer(read_only=True)
+    project = RateProjectSerializer(read_only=True)
     employee_id = serializers.IntegerField(required=False, allow_null=True, write_only=True)
     project_id = serializers.IntegerField(required=False, allow_null=True, write_only=True)
 
@@ -30,7 +48,7 @@ class RateSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at',
         ]
-        read_only_fields = ['id', 'company', 'employee', 'project', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'company', 'created_at', 'updated_at']
 
     def validate(self, attrs):
         effective_from = attrs.get('effective_from')

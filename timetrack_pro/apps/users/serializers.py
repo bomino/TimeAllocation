@@ -31,6 +31,24 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'email', 'role']
 
 
+class UserListSerializer(serializers.ModelSerializer):
+    """Serializer for user list (admin view)."""
+
+    class Meta:
+        model = User
+        fields = [
+            'id',
+            'email',
+            'first_name',
+            'last_name',
+            'role',
+            'is_active',
+            'last_login',
+            'created_at',
+        ]
+        read_only_fields = fields
+
+
 class UserProfileSerializer(serializers.ModelSerializer):
     """Serializer for user profile updates."""
 
