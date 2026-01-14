@@ -56,10 +56,6 @@ class TimeEntry(TimeStampedModel):
         help_text='Where the billing rate was resolved from',
     )
 
-    is_timer_entry = models.BooleanField(default=False)
-    timer_started_at = models.DateTimeField(null=True, blank=True)
-    timer_stopped_at = models.DateTimeField(null=True, blank=True)
-
     class Meta:
         ordering = ['-date', '-created_at']
         verbose_name_plural = 'time entries'

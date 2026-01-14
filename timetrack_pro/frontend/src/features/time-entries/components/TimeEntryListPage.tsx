@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { Plus, Square, Clock } from 'lucide-react'
+import { useState } from 'react'
+import { Plus, Clock } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -7,8 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { format, endOfWeek, startOfWeek, subWeeks, subMonths, parseISO, isAfter, isBefore } from 'date-fns'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { Card, CardContent } from '@/components/ui/card'
 import {
   Table,
   TableBody,
@@ -38,8 +37,8 @@ import {
 import { PageLoader } from '@/components/common/LoadingSpinner'
 import { EmptyState } from '@/components/common/EmptyState'
 import apiClient from '@/lib/api-client'
-import { formatDate, formatDuration } from '@/lib/utils'
-import type { TimeEntry, Timer } from '@/types/time-entry'
+import { formatDate } from '@/lib/utils'
+import type { TimeEntry } from '@/types/time-entry'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 
 interface Project {
@@ -132,17 +131,6 @@ export function TimeEntryListPage() {
     },
   })
 
-  const { data: activeTimer } = useQuery({
-    queryKey: ['timer', 'active'],
-    queryFn: async () => {
-      const response = await apiClient.get<Timer>('/time-entries/timer/active/', {
-        validateStatus: (status) => status === 200 || status === 404,
-      })
-      if (response.status === 404) return null
-      return response.data
-    },
-    refetchInterval: (query) => (query.state.data ? 1000 : 30000),
-  })
 
   const createEntryMutation = useMutation({
     mutationFn: async (data: TimeEntryFormData) => {
@@ -164,17 +152,6 @@ export function TimeEntryListPage() {
         hours: '',
         description: '',
       })
-    },
-  })
-
-  const stopTimerMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiClient.post('/time-entries/timer/stop/')
-      return response.data
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['time-entries'] })
-      queryClient.invalidateQueries({ queryKey: ['timer'] })
     },
   })
 
@@ -280,37 +257,6 @@ export function TimeEntryListPage() {
         }
       />
 
-      {activeTimer && (
-        <Card className="mb-6 border-primary">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-              Timer Running
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">{activeTimer.project.name}</p>
-                <p className="text-sm text-muted-foreground">{activeTimer.description || 'No description'}</p>
-              </div>
-              <div className="flex items-center gap-4">
-                <TimerDisplay startTime={activeTimer.timer_started_at} />
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => stopTimerMutation.mutate()}
-                  disabled={stopTimerMutation.isPending}
-                >
-                  <Square className="mr-2 h-4 w-4" />
-                  Stop
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       <Card className="mb-6">
         <CardContent className="pt-6">
           <div className="flex gap-4">
@@ -340,7 +286,7 @@ export function TimeEntryListPage() {
             <EmptyState
               icon={Clock}
               title="No time entries"
-              description="Start tracking your time by adding an entry or starting a timer"
+              description="Start tracking your time by adding an entry"
               action={
                 <Button onClick={() => setDialogOpen(true)}>
                   <Plus className="mr-2 h-4 w-4" />
@@ -368,11 +314,6 @@ export function TimeEntryListPage() {
                       {entry.description || '-'}
                     </TableCell>
                     <TableCell className="text-right">
-                      {entry.is_timer_entry && (
-                        <Badge variant="outline" className="mr-2">
-                          Timer
-                        </Badge>
-                      )}
                       {parseFloat(entry.hours).toFixed(2)}h
                     </TableCell>
                     <TableCell className="text-right">
@@ -385,27 +326,6 @@ export function TimeEntryListPage() {
           )}
         </CardContent>
       </Card>
-    </div>
-  )
-}
-
-function TimerDisplay({ startTime }: { startTime: string }) {
-  const [elapsed, setElapsed] = useState(0)
-
-  useEffect(() => {
-    const start = new Date(startTime).getTime()
-    const updateElapsed = () => {
-      const now = Date.now()
-      setElapsed(Math.floor((now - start) / 1000))
-    }
-    updateElapsed()
-    const interval = setInterval(updateElapsed, 1000)
-    return () => clearInterval(interval)
-  }, [startTime])
-
-  return (
-    <div className="text-2xl font-mono font-bold text-primary">
-      {formatDuration(elapsed)}
     </div>
   )
 }

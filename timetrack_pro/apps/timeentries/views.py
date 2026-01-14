@@ -1,19 +1,13 @@
 """
 Views for TimeEntry API.
 """
-from rest_framework import status, viewsets
-from rest_framework.decorators import action
+from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from apps.timeentries.models import TimeEntry
 from apps.timeentries.serializers import (
-    ActiveTimerSerializer,
     TimeEntrySerializer,
     TimeEntryUpdateSerializer,
-    TimerStartSerializer,
-    TimerStopSerializer,
 )
 from core.pagination import StandardPagination
 
@@ -44,55 +38,3 @@ class TimeEntryViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(project_id=project_id)
 
         return queryset
-
-
-class TimerStartView(APIView):
-    """Start a new timer."""
-
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        serializer = TimerStartSerializer(data=request.data, context={'request': request})
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        entry = serializer.save()
-        return Response(
-            TimeEntrySerializer(entry).data,
-            status=status.HTTP_201_CREATED,
-        )
-
-
-class TimerStopView(APIView):
-    """Stop the active timer."""
-
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        serializer = TimerStopSerializer(data=request.data, context={'request': request})
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        entry = serializer.save()
-        return Response(TimeEntrySerializer(entry).data)
-
-
-class ActiveTimerView(APIView):
-    """Get the currently active timer."""
-
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        active_timer = TimeEntry.objects.filter(
-            user=request.user,
-            is_timer_entry=True,
-            timer_stopped_at__isnull=True,
-        ).first()
-
-        if not active_timer:
-            return Response(
-                {'detail': 'No active timer.'},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-        return Response(ActiveTimerSerializer(active_timer).data)

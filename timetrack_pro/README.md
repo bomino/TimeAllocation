@@ -4,7 +4,7 @@ A comprehensive employee time allocation and timesheet management system built w
 
 ## Features
 
-- **Time Tracking**: Log work hours with optional timer functionality
+- **Time Tracking**: Log work hours for projects
 - **Timesheet Management**: Submit, approve, and reject timesheets with approval workflow
 - **Role-Based Access Control**: Employee, Manager, and Admin roles with hierarchical permissions
 - **Billing Rates**: Flexible rate management with fallback hierarchy (employee-project → project → employee → company)
@@ -57,7 +57,7 @@ timetrack_pro/
 │   ├── companies/                 # Organization management
 │   ├── projects/                  # Project management
 │   ├── rates/                     # Billing rate management
-│   ├── timeentries/               # Time entries & timer
+│   ├── timeentries/               # Time entries
 │   ├── timesheets/                # Timesheet workflow
 │   ├── reports/                   # Analytics & reporting
 │   └── infrastructure/            # Shared utilities
@@ -241,9 +241,6 @@ timetrack_pro/
 | `/api/v1/time-entries/<id>/` | GET | Get entry details |
 | `/api/v1/time-entries/<id>/` | PATCH | Update entry |
 | `/api/v1/time-entries/<id>/` | DELETE | Delete entry |
-| `/api/v1/time-entries/timer/start/` | POST | Start timer |
-| `/api/v1/time-entries/timer/stop/` | POST | Stop timer |
-| `/api/v1/time-entries/timer/active/` | GET | Get active timer |
 
 ### Timesheets
 
