@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Separator } from '@/components/ui/separator'
 import { useState, useRef, useEffect } from 'react'
 
 interface HeaderProps {
@@ -36,7 +35,7 @@ export function Header({ onMenuClick }: HeaderProps) {
     : '?'
 
   return (
-    <header className="flex h-16 items-center justify-between border-b bg-background px-4">
+    <header className="flex h-14 items-center justify-between border-b border-border bg-background px-4">
       <Button
         variant="ghost"
         size="icon"
@@ -51,10 +50,10 @@ export function Header({ onMenuClick }: HeaderProps) {
       <div className="relative" ref={dropdownRef}>
         <button
           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-          className="flex items-center gap-2 rounded-md p-2 hover:bg-accent"
+          className="flex items-center gap-2 rounded-md p-1.5 hover:bg-accent transition-colors"
         >
-          <Avatar className="h-8 w-8">
-            <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+          <Avatar className="h-7 w-7">
+            <AvatarFallback className="text-xs bg-primary text-primary-foreground">{initials}</AvatarFallback>
           </Avatar>
           <span className="hidden text-sm font-medium md:block">
             {user?.first_name} {user?.last_name}
@@ -63,28 +62,28 @@ export function Header({ onMenuClick }: HeaderProps) {
         </button>
 
         {isDropdownOpen && (
-          <div className="absolute right-0 top-full mt-1 w-56 rounded-md border bg-background shadow-lg">
+          <div className="absolute right-0 top-full mt-1 w-56 rounded-md border border-border bg-background">
             <div className="p-2">
               <div className="px-2 py-1.5">
                 <p className="text-sm font-medium">{user?.first_name} {user?.last_name}</p>
                 <p className="text-xs text-muted-foreground">{user?.email}</p>
               </div>
             </div>
-            <Separator />
+            <div className="border-t border-border" />
             <div className="p-1">
               <button
                 onClick={() => {
                   setIsDropdownOpen(false)
                   navigate('/profile')
                 }}
-                className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent"
+                className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent transition-colors"
               >
                 <User className="h-4 w-4" />
                 Profile
               </button>
               <button
                 onClick={handleLogout}
-                className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-destructive hover:bg-accent"
+                className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-destructive hover:bg-accent transition-colors"
               >
                 <LogOut className="h-4 w-4" />
                 Log out

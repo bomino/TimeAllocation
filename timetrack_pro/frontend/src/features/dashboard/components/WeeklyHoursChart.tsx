@@ -21,38 +21,38 @@ export function WeeklyHoursChart({ data }: WeeklyHoursChartProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Hours This Week</CardTitle>
+        <CardTitle className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Hours This Week</CardTitle>
       </CardHeader>
       <CardContent>
         {!mounted ? (
-          <Skeleton className="h-[200px]" />
+          <Skeleton className="h-[200px] w-full" />
         ) : (
-          <div className="h-[200px]" style={{ minWidth: 0 }}>
-            <ResponsiveContainer width="100%" height="100%" minWidth={200}>
+          <div className="h-[200px] w-full" style={{ minWidth: 200, minHeight: 200 }}>
+            <ResponsiveContainer width="100%" height={200} minWidth={200}>
               <BarChart data={data}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(220 13% 91%)" />
                 <XAxis
                   dataKey="day"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fontSize: 12, fill: '#64748b' }}
+                  tick={{ fontSize: 11, fill: 'hsl(215 16% 47%)' }}
                 />
                 <YAxis
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fontSize: 12, fill: '#64748b' }}
+                  tick={{ fontSize: 11, fill: 'hsl(215 16% 47%)' }}
                   width={30}
                 />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: 'white',
-                    border: '1px solid #e2e8f0',
+                    border: '1px solid hsl(220 13% 91%)',
                     borderRadius: '6px',
                     fontSize: '12px',
                   }}
                   formatter={(value) => [`${value}h`, 'Hours']}
                 />
-                <Bar dataKey="hours" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="hours" fill="hsl(238 73% 60%)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
